@@ -128,18 +128,17 @@ def s3_to_mongodb():
             # 모든 OCR 결과를 하나의 문자열로 합치기
             final_description = "\n".join(all_descriptions)
             
-            print("title": title)
-            print("category": category)
-            print("location": performance_place)
-            print("price": price)
-            print("start_date": start_date)
-            print("end_date": end_date)
-            print("show_time": show_time)
-            print("running_time": running_time)
-            print("rating": age_rating)
-            print("description": final_description)
-            print("poster_url": poster_img)
-            print("hosts": [{"site_id": 2, "url":ticket_url}])
+            print(f"title: {title}")
+            print(f"category: {category}")
+            print(f"location: {performance_place}")
+            print(f"price: {price}")
+            print(f"start_date: {start_date}")
+            print(f"end_date: {end_date}")
+            print(f"show_time: {show_time}")
+            print(f"running_time: {running_time}")
+            print(f"rating: {age_rating}")
+            print(f"description: {final_description")
+            print(f"poster_url: {poster_img}")
 
             db.Shows.insert_one({
                 "title": title,
