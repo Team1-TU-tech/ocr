@@ -13,7 +13,7 @@ s3 = boto3.client('s3',
     )
 
 objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
-
+print(objects)
 #mongodb
 mongopassword = os.getenv("MONGOPASS")
 url = f"mongodb+srv://summerham22:{mongopassword}@cluster0.c1zjv.mongodb.net/"
