@@ -15,9 +15,10 @@ s3 = boto3.client('s3',
 objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
 
 #mongodb
-#url = "mongodb+srv://summerham22:${MONGOPASS}@cluster0.c1zjv.mongodb.net/"
-#client = MongoClient(url, tlsCAFile=certifi.where())
-#db = client.TicketMoa
+mongopassword = os.getenv("MONGOPASS")
+url = f"mongodb+srv://summerham22:{mongopassword}@cluster0.c1zjv.mongodb.net/"
+client = MongoClient(url, tlsCAFile=certifi.where())
+db = client.TicketMoa
 
 def s3_to_mongodb():
     for i in objects:
