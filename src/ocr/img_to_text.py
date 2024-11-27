@@ -5,18 +5,18 @@ import certifi
 from ocr.get_img import ocr
 from pymongo import MongoClient
 
-s3 = boto3.client('s3',
-    aws_access_key_id="",
-    aws_secret_access_key="",
-    region_name="ap-northeast-2"
-    )
+#s3 = boto3.client('s3',
+#    aws_access_key_id="",
+#    aws_secret_access_key="",
+#    region_name="ap-northeast-2"
+#    )
 
 objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
 
 #mongodb
-url = "mongodb+srv://summerham22:{패스워드}@cluster0.c1zjv.mongodb.net/"
-client = MongoClient(url, tlsCAFile=certifi.where())
-db = client.ham
+#url = "mongodb+srv://summerham22:${MONGOPASS}@cluster0.c1zjv.mongodb.net/"
+#client = MongoClient(url, tlsCAFile=certifi.where())
+#db = client.TicketMoa
 
 def s3_to_mongodb():
     for i in objects:
@@ -129,7 +129,7 @@ def s3_to_mongodb():
             final_description = "\n".join(all_descriptions)
             
 
-            db.users.insert_one({
+            db.Shows.insert_one({
                 "title": title,
                 "category": category,
                 "location": performance_place,
