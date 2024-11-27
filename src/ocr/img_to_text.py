@@ -13,7 +13,6 @@ s3 = boto3.client('s3',
     )
 
 objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
-print(objects)
 #mongodb
 mongopassword = os.getenv("MONGOPASS")
 url = f"mongodb+srv://summerham22:{mongopassword}@cluster0.c1zjv.mongodb.net/"
@@ -23,16 +22,14 @@ db = client.TicketMoa
 def s3_to_mongodb():
     for i in objects:
         filename = i["Key"]
-    
         if filename.endswith('.html'):
-            title = filename.split('.')[0]
-            #ticket_url = 'http://ticket.yes24.com/Perf/51670'
+            title = filename.split('/')[1].split('.')[0]
             ticket_url = f'http://ticket.yes24.com/Perf/{title}'
             response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/{title}.html')
             
             file_content = response['Body'].read().decode('utf-8')
             soup = BeautifulSoup(file_content, "html.parser")
-            
+        
             # 카테고리
             category_element = soup.select_one('.rn-location a')
             category = category_element.text.strip() if category_element else None
@@ -93,14 +90,14 @@ def s3_to_mongodb():
             # 주최자 정보
             organizer_info_element = soup.select_one('#divPerfOrganization')
             organizer_info = organizer_info_element.text.strip() if organizer_info_element else None
-            
+        
             # 상세정보 이미지
             div_content = soup.find('div', id="divPerfContent")
-            
+        
             if div_content:
                 # 모든 이미지 태그 찾기
                 img_tags = div_content.find_all('img', class_='txc-image')
-                
+            
                 # 모든 OCR 결과를 저장할 리스트
                 all_descriptions = []
 
@@ -129,7 +126,7 @@ def s3_to_mongodb():
 
             # 모든 OCR 결과를 하나의 문자열로 합치기
             final_description = "\n".join(all_descriptions)
-            
+        
             print(f"title: {title}")
             print(f"category: {category}")
             print(f"location: {performance_place}")
@@ -147,6 +144,8 @@ def s3_to_mongodb():
                 "category": category,
                 "location": performance_place,
                 "price": price,
+                "open_date": None,
+                "pre_open_date": None,
                 "start_date": start_date,
                 "end_date": end_date,
                 "show_time": show_time,
