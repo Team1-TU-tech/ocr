@@ -92,7 +92,8 @@ def s3_to_mongodb():
             organizer_info = organizer_info_element.text.strip() if organizer_info_element else None
         
             # 상세정보 이미지
-            div_content = soup.find('div', id="divPerfContent")
+            #div_content = soup.find('div', id="divPerfContent")
+            div_content = soup.find('div', attrs={"id": ["divPerfContent", "divPerfNotice"]})
         
             if div_content:
                 # 모든 이미지 태그 찾기
