@@ -117,17 +117,29 @@ def s3_to_mongodb():
                                 all_descriptions.append(f"OCR 실패: {e}")
                         else:
                             print(f"[{idx}] 이미지 URL을 찾을 수 없습니다.")
-                            all_descriptions.append("이미지 URL 누락")
+                            all_descriptions.append("상세설명이 없습니다.")
                 else:
                     print("이미지 태그를 찾을 수 없습니다.")
-                    all_descriptions.append("이미지 태그 누락")
+                    all_descriptions.append("상세설명이 없습니다.")
             else:
                 print("divPerfContent를 찾을 수 없습니다.")
-                all_descriptions.append("divPerfContent 누락")
+                all_descriptions.append("상세설명이 없습니다.")
 
             # 모든 OCR 결과를 하나의 문자열로 합치기
             final_description = "\n".join(all_descriptions)
             
+            print("title": title)
+            print("category": category)
+            print("location": performance_place)
+            print("price": price)
+            print("start_date": start_date)
+            print("end_date": end_date)
+            print("show_time": show_time)
+            print("running_time": running_time)
+            print("rating": age_rating)
+            print("description": final_description)
+            print("poster_url": poster_img)
+            print("hosts": [{"site_id": 2, "url":ticket_url}])
 
             db.Shows.insert_one({
                 "title": title,
