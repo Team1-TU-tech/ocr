@@ -1,124 +1,68 @@
-import boto3
-from requests_html import HTML
-from bs4 import BeautifulSoup
-import certifi
-from ocr_a.ocr import ocr
-from pymongo import MongoClient
+import requests
+from PIL import Image
+from io import BytesIO
+import numpy as np
+import easyocr
+from multiprocessing import Pool
 
-s3 = boto3.client('s3',
-    aws_access_key_id="",
-    aws_secret_access_key="",
-    region_name="ap-northeast-2"
-    )
+# 이미지 다운로드
+def download_image(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content))
+    except requests.exceptions.RequestException as e:
+        print(f"이미지 다운로드 실패: {e}")
+        return None
 
-objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
+# 이미지 크기 조정
+def resize_image(image, max_width=1000):
+    width, height = image.size
+    if width > max_width:
+        new_height = int(max_width * height / width)
+        return image.resize((max_width, new_height))
+    return image
 
-#mongodb
-url = "mongodb+srv://summerham22:{패스워드}@cluster0.c1zjv.mongodb.net/"
-client = MongoClient(url, tlsCAFile=certifi.where())
-db = client.ham
+# 이미지 분할
+def split_image(image, height_limit=1000):
+    width, height = image.size
+    parts = []
+    for i in range(0, height, height_limit):
+        box = (0, i, width, min(i + height_limit, height))
+        parts.append(image.crop(box))
+    return parts
 
-def s3_to_mongodb():
-    for i in objects:
-        filename = i["Key"]
-    
-        if filename.endswith('.html'):
-            title = filename.split('.')[0]
-            ticket_url = 'http://ticket.yes24.com/Perf/51671'
-            #ticket_url = f'http://ticket.yes24.com/Perf/{title}'
-            response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/51671.html')
-            file_content = response['Body'].read().decode('utf-8')
-            soup = BeautifulSoup(file_content, "html.parser")
+# Numpy 변환
+def pil_to_numpy(image):
+    return np.array(image)
 
-            # 카테고리
-            category_element = soup.select_one('.rn-location a')
-            category = category_element.text.strip() if category_element else None
+# 병렬 처리: EasyOCR Reader를 생성하여 처리
+def process_image_part(part):
+    reader = easyocr.Reader(['ko', 'en'])  # Pool 내에서 Reader 생성
+    part_array = pil_to_numpy(part)
+    return reader.readtext(part_array)
 
-            # 단독판매 여부
-            exclusive_sales_element = soup.select_one('.rn-label')
-            exclusive_sales = exclusive_sales_element.text.strip() if exclusive_sales_element else None
+def perform_ocr_parallel(image_parts):
+    with Pool(processes=4) as pool:
+        results = pool.map(process_image_part, image_parts)
+    return [item for sublist in results for item in sublist]
 
-            # 공연 제목
-            title_element = soup.select_one('.rn-big-title')
-            title = title_element.text.strip() if title_element else None
+# 메인 OCR 함수
+def ocr(image_url):
+    # 이미지 다운로드
+    original_image = download_image(image_url)
+    if original_image is None:
+        return "이미지 다운로드에 실패했습니다."
 
-            # 공연일자
-            show_time_element = soup.select_one('.rn-product-area3 dd')
-            show_time = show_time_element.text.strip() if show_time_element else None
+    # 이미지 크기 조정
+    original_image = resize_image(original_image)
 
-            # 시작일자와 종료일자
-            date_element = soup.select_one('.ps-date')
-            if date_element:
-                date_text = date_element.text.strip()
-                start_date, end_date = map(str.strip, date_text.split('~'))  # 양쪽 공백 제거
-            else:
-                start_date = None
-                end_date = None
+    # 이미지 분할
+    image_parts = split_image(original_image, height_limit=1000)
 
-            # 공연 상세 정보
-            performance_details = soup.select('.rn08-tbl td')
-            running_time = performance_details[5].text.strip() if len(performance_details) > 5 else None
-            age_rating = performance_details[4].text.strip() if len(performance_details) > 4 else None
-            performance_place = performance_details[6].text.strip() if len(performance_details) > 6 else None
+    # 병렬 OCR 실행
+    ocr_results = perform_ocr_parallel(image_parts)
 
-            # 가격 정보
-            price_elements = soup.select('#divPrice .rn-product-price1')
-            price = price_elements[0].text.strip() if price_elements else None
-
-            # 포스터 이미지 URL
-            poster_img_element = soup.select_one('.rn-product-imgbox img')
-            poster_img = poster_img_element['src'] if poster_img_element else None
-
-            # 혜택 및 할인 정보
-            benefits_element = soup.select_one('.rn-product-dc')
-            benefits = benefits_element.text.strip() if benefits_element else None
-
-            # 출연진 정보
-            performer_elements = soup.select('.rn-product-peole')
-            performer_names = [performer.text.strip() for performer in performer_elements]
-            performer_links = [performer.get('href') for performer in performer_elements]
-
-            # 출연진 정보가 없을 경우 빈 값 처리
-            if not performer_names:
-                performer_names.append(None)
-                performer_links.append(None)
-
-            # 호스팅 서비스 사업자 정보
-            hosting_provider_element = soup.select_one('.footxt p')
-            hosting_provider = hosting_provider_element.text.strip() if hosting_provider_element else None
-
-            # 주최자 정보
-            organizer_info_element = soup.select_one('#divPerfOrganization')
-            organizer_info = organizer_info_element.text.strip() if organizer_info_element else None
-
-            # 상세정보 이미지
-            div_content = soup.find('div', id="divPerfContent")
-            img_tag = div_content.find('img', class_='txc-image')
-
-            if img_tag:
-                img_url = img_tag['src']
-                print(f"이미지 URL: {img_url}")
-            else:
-                print("이미지를 찾을 수 없습니다.")
-                img_url = None
-
-            description = ocr(img_url)
-
-
-            db.users.insert_one({
-                "title": title,
-                "category": category,
-                "location": performance_place,
-                "price": price,
-                "start_date": start_date,
-                "end_date": end_date,
-                "show_time": show_time,
-                "running_time": running_time,
-                "rating": age_rating,
-                "description": description,
-                "poster_url": poster_img,
-                "hosts": [{"site_id": 2, "url":ticket_url}]
-            })
-
-
-s3_to_mongodb()
+    # 텍스트 추출
+    texts = [result[1] for result in ocr_results]
+    return "\n".join(texts)  # 모든 텍스트를 합쳐 반환

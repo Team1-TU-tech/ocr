@@ -1,6 +1,6 @@
 [project]
 name = "ocr"
-version = "0.2.0"
+version = "0.1.1"
 description = "Image to Text (OCR)"
 authors = [
     {name = "sunwoo", email = "summerham22@gmail.com"},
