@@ -137,7 +137,7 @@ def s3_to_mongodb():
             print(f"show_time: {show_time}")
             print(f"running_time: {running_time}")
             print(f"rating: {age_rating}")
-            print(f"description: {final_description")
+            print(f"description: {final_description}")
             print(f"poster_url: {poster_img}")
 
             db.Shows.insert_one({
