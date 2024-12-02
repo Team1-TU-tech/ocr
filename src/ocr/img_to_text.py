@@ -6,6 +6,7 @@ from ocr.get_img import ocr
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 import os, re
+from transformers import pipeline
 
 s3 = boto3.client('s3',
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
@@ -155,6 +156,23 @@ def s3_to_mongodb():
 
             # 모든 OCR 결과를 하나의 문자열로 합치기
             final_description = "\n".join(all_descriptions)
+
+            ####################################################
+            ###################추천알고리즘########################
+            ####################################################
+            # Zero-shot classification 파이프라인 사용
+            classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+            # 분류할 텍스트
+            classification = final_description
+
+            # 가능한 주제 카테고리 (사용자가 정의)
+            candidate_labels = ["일상", "유머", "로맨틱", "호러", "크리스마스", "힐링"]
+
+            # Zero-shot 분류 실행
+            result = classifier(description, candidate_labels=candidate_labels)
+
+            # 결과 출력
         
             print(f"title: {title}")
             print(f"category: {category}")
@@ -168,6 +186,8 @@ def s3_to_mongodb():
             print(f"poster_url: {poster_img}")
             print(f"artist: {performer_info}")
             print(f"region: {area}")
+            print(f"분류된 카테고리: {result['labels'][0]}")
+            print(f"확신도: {result['scores'][0]}")
 
             # 중복된 데이터가 존재하는지 체크
             existing_data = db.Shows.find_one({"title": title, "start_date": start_date})
@@ -208,6 +228,7 @@ def s3_to_mongodb():
                     if len(previous_data) < 2:
                         previous_data.append({"site_id":2, "url":ticket_url})
                         db.Shows.update_one({"title":title,"start_date":start_date},{"$set":{"hosts":previous_data}})
+    
 
             
 if __name__ == '__main__':

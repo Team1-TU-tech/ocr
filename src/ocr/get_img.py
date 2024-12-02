@@ -65,4 +65,4 @@ def ocr(image_url):
 
     # 텍스트 추출
     texts = [result[1] for result in ocr_results]
-    return "\n".join(texts)  # 모든 텍스트를 합쳐 반환
+    return repr("\n".join(texts))  # 모든 텍스트를 합쳐 반환
