@@ -45,6 +45,7 @@ def s3_to_mongodb():
 
             # 공연 제목
             title_element = soup.select_one('.rn-big-title')
+            original_title = title_element.text.strip() if title_element else None
             # title_element가 None이 아닐 경우에만 텍스트를 처리
             if title_element:
                 title = re.sub(r'[^가-힣A-Za-z0-9]', '',title_element.text.strip())
@@ -63,6 +64,9 @@ def s3_to_mongodb():
             else:
                 start_date = None
                 end_date = None
+
+            #DuplicateKey 중복데이터 구별을 위한 컬럼
+            duplicate_key = f"{title}{start_date}"
 
             # 공연 상세 정보
             performance_details = soup.select('.rn08-tbl td')
@@ -118,8 +122,27 @@ def s3_to_mongodb():
             organizer_info = organizer_info_element.text.strip() if organizer_info_element else None
         
             # 지역 정보
+            area_mapping = {
+                            '서울': '서울',
+                            '경기': '수도권',
+                            '인천': '수도권',
+                            '부산': '경상',
+                            '대구': '경상',
+                            '울산': '경상',
+                            '경남': '경상',
+                            '경북': '경상',
+                            '전북': '전라',
+                            '전주': '전라',
+                            '광주': '전라',
+                            '전남': '전라',
+                            '충북': '충청',
+                            '대전': '충청',
+                            '강원': '강원',
+                            '제주': '제주'
+                            }
             area_element = soup.select_one('#TheaterAddress')
             area = area_element.get_text().split(' ')[0][:2] if area_element else None
+            area = area_mapping.get(area, '기타')
 
             # 상세정보 이미지
             div_content = soup.find('div', attrs={"id": ["divPerfContent", "divPerfNotice"]})
@@ -177,7 +200,8 @@ def s3_to_mongodb():
 
             # 결과 출력
         
-            print(f"title: {title}")
+            print(f"title: {original_title}")
+            print(f"duplicatekey: {duplicate_key}")
             print(f"category: {category}")
             print(f"location: {performance_place}")
             print(f"price: {price_info}")
@@ -193,16 +217,18 @@ def s3_to_mongodb():
             print(f"확신도: {result['scores'][0]}")
 
             # 중복된 데이터가 존재하는지 체크
-            existing_data = db.Shows.find_one({"title": title, "start_date": start_date})
+            existing_data = db.Shows.find_one({"duplicatekey": duplicate_key})
 
             if existing_data is None:
                 # 중복된 데이터가 없으면 새로운 데이터 삽입
                 try:
                     #db.Shows.create_index([('title', 1),('start_date', 1)],unique=True)
-                    print(f"Inserting new data: {title}, {start_date}")
+                    print(f"Inserting new data: {duplicate_key}")
 
                     db.Shows.insert_one({
-                        "title": title,
+                        "title": original_title,
+                        "on_sale": True,
+                        "duplicatekey": duplicate_key,
                         "category": category,
                         "location": performance_place,
                         "price": price_info,
@@ -221,16 +247,16 @@ def s3_to_mongodb():
                     })
                     
                 except DuplicateKeyError:
-                    print(f"Duplicate key error: {title}, {start_date}")
+                    print(f"Duplicate key error: {duplicate_key}")
             else:
                     # 이미 데이터가 존재하면 hosts 필드만 업데이트
-                    print(f"Data already exists for {title}, {start_date}. Updating hosts.")
-                    previous_data = db.Shows.find_one({"title":title,"start_date":start_date})
+                    print(f"Data already exists for {duplicate_key}. Updating hosts.")
+                    previous_data = db.Shows.find_one({"duplicatekey":duplicate_key})
                     previous_data = previous_data["hosts"]
 
                     if len(previous_data) < 2:
-                        previous_data.append({"site_id":2, "url":ticket_url})
-                        db.Shows.update_one({"title":title,"start_date":start_date},{"$set":{"hosts":previous_data}})
+                        previous_data.append({"site_id":2, "ticket_url":ticket_url})
+                        db.Shows.update_one({"duplicatekey":duplicate_key},{"$set":{"hosts":previous_data}})
     
 
             
