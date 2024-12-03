@@ -29,8 +29,8 @@ def s3_to_mongodb():
             # title = filename.split('/')[1].split('.')[0]
             #ticket_url = f'http://ticket.yes24.com/Perf/{title}'
             #response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/{title}.html')
-            ticket_url = f'http://ticket.yes24.com/Perf/50693'
-            response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/50693.html')
+            ticket_url = f'http://ticket.yes24.com/Perf/51466'
+            response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/51466.html')
             
             file_content = response['Body'].read().decode('utf-8')
             soup = BeautifulSoup(file_content, "html.parser")
@@ -164,13 +164,16 @@ def s3_to_mongodb():
             classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
             # 분류할 텍스트
-            classification = final_description
+            if final_description:
+                classification = final_description
 
-            # 가능한 주제 카테고리 (사용자가 정의)
-            candidate_labels = ["일상", "유머", "로맨틱", "호러", "크리스마스", "힐링"]
+                # 가능한 주제 카테고리 (사용자가 정의)
+                candidate_labels = ["일상", "유머", "로맨틱", "호러", "크리스마스", "힐링"]
 
-            # Zero-shot 분류 실행
-            result = classifier(description, candidate_labels=candidate_labels)
+                # Zero-shot 분류 실행
+                result = classifier(description, candidate_labels=candidate_labels)
+            else:
+                result = None
 
             # 결과 출력
         
