@@ -236,6 +236,8 @@ def s3_to_mongodb(start_id):
                         previous_data.append({"site_id":2, "ticket_url":ticket_url})
                         db.ticket.update_one({"duplicatekey":duplicate_key},{"$set":{"hosts":previous_data}})
     
+    return title
+    
 
             
 if __name__ == '__main__':
