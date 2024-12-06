@@ -15,7 +15,7 @@ def connect_to_redis():
         print(f"Redis 연결 오류: {e}")
         raise
 
-def get_last_id_from_redis(name, default_id=40000):
+def get_last_id_from_redis(name, default_id=45703):
     r = connect_to_redis()
     key = f'{name}_last_processed_id' 
     last_id = r.get(key)
