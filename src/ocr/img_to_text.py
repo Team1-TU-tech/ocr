@@ -6,7 +6,6 @@ from ocr.get_img import ocr
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 import os, re
-from transformers import pipeline
 
 s3 = boto3.client('s3',
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
@@ -18,19 +17,19 @@ objects = s3.list_objects(Bucket = 't1-tu-data', Prefix='yes24/')['Contents']
 
 #mongodb
 mongopassword = os.getenv("MONGOPASS")
-url = f"mongodb+srv://summerham22:{mongopassword}@cluster0.c1zjv.mongodb.net/"
+url = f"mongodb+srv://summerham22:{mongopassword}@cluster0.5vlv3.mongodb.net/tut?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(url, tlsCAFile=certifi.where())
-db = client.TicketMoa
+db = client.tut
 
-def s3_to_mongodb():
-    # for i in objects:
-        # filename = i["Key"]
-        # if filename.endswith('.html'):
-            # title = filename.split('/')[1].split('.')[0]
-            #ticket_url = f'http://ticket.yes24.com/Perf/{title}'
-            #response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/{title}.html')
-            ticket_url = f'http://ticket.yes24.com/Perf/51466'
-            response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/51466.html')
+def s3_to_mongodb(start_id):
+    for i in objects:
+        filename = i["Key"]
+        if filename.endswith('.html'):
+            title = filename.split('/')[1].split('.')[0]
+            ticket_url = f'http://ticket.yes24.com/Perf/{title}'
+            response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/{title}.html')
+            #ticket_url = f'http://ticket.yes24.com/Perf/51466'
+            #response = s3.get_object(Bucket='t1-tu-data', Key=f'yes24/51466.html')
             
             file_content = response['Body'].read().decode('utf-8')
             soup = BeautifulSoup(file_content, "html.parser")
@@ -180,24 +179,6 @@ def s3_to_mongodb():
             # 모든 OCR 결과를 하나의 문자열로 합치기
             final_description = "\n".join(all_descriptions)
 
-            ####################################################
-            ###################추천알고리즘########################
-            ####################################################
-            # Zero-shot classification 파이프라인 사용
-            classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-
-            # 분류할 텍스트
-            if final_description:
-                classification = final_description
-
-                # 가능한 주제 카테고리 (사용자가 정의)
-                candidate_labels = ["일상", "유머", "로맨틱", "호러", "크리스마스", "힐링"]
-
-                # Zero-shot 분류 실행
-                result = classifier(description, candidate_labels=candidate_labels)
-            else:
-                result = None
-
             # 결과 출력
         
             print(f"title: {original_title}")
@@ -213,11 +194,9 @@ def s3_to_mongodb():
             print(f"poster_url: {poster_img}")
             print(f"artist: {performer_info}")
             print(f"region: {area}")
-            print(f"분류된 카테고리: {result['labels'][0]}")
-            print(f"확신도: {result['scores'][0]}")
 
             # 중복된 데이터가 존재하는지 체크
-            existing_data = db.Shows.find_one({"duplicatekey": duplicate_key})
+            existing_data = db.ticket.find_one({"duplicatekey": duplicate_key})
 
             if existing_data is None:
                 # 중복된 데이터가 없으면 새로운 데이터 삽입
@@ -225,9 +204,8 @@ def s3_to_mongodb():
                     #db.Shows.create_index([('title', 1),('start_date', 1)],unique=True)
                     print(f"Inserting new data: {duplicate_key}")
 
-                    db.Shows.insert_one({
+                    db.ticket.insert_one({
                         "title": original_title,
-                        "on_sale": True,
                         "duplicatekey": duplicate_key,
                         "category": category,
                         "location": performance_place,
@@ -251,12 +229,12 @@ def s3_to_mongodb():
             else:
                     # 이미 데이터가 존재하면 hosts 필드만 업데이트
                     print(f"Data already exists for {duplicate_key}. Updating hosts.")
-                    previous_data = db.Shows.find_one({"duplicatekey":duplicate_key})
+                    previous_data = db.ticket.find_one({"duplicatekey":duplicate_key})
                     previous_data = previous_data["hosts"]
 
                     if len(previous_data) < 2:
                         previous_data.append({"site_id":2, "ticket_url":ticket_url})
-                        db.Shows.update_one({"duplicatekey":duplicate_key},{"$set":{"hosts":previous_data}})
+                        db.ticket.update_one({"duplicatekey":duplicate_key},{"$set":{"hosts":previous_data}})
     
 
             
