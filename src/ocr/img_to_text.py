@@ -164,7 +164,7 @@ def s3_to_mongodb(start_id):
                                     all_descriptions.append(description)  # 결과 누적
                                 except Exception as e:
                                     print(f"[{idx}] OCR 실패: {e}")
-                                    all_descriptions.append(None)
+                                    all_descriptions.append("상세설명이 없습니다.")
                             else:
                                 print(f"[{idx}] 이미지 URL을 찾을 수 없습니다.")
                                 all_descriptions.append("상세설명이 없습니다.")
