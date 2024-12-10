@@ -143,7 +143,8 @@ def s3_to_mongodb(start_id):
                 area = area_mapping.get(area, '기타')
 
                 # 상세정보 이미지
-                div_content = soup.find('div', attrs={"id": ["divPerfContent", "divPerfNotice"]})
+                div_content = soup.find('div', attrs={"id": ["divPerfContent"]})
+                #div_content = soup.find('div', attrs={"id": ["divPerfContent", "divPerfNotice"]})
                 
                 # 모든 OCR 결과를 저장할 리스트
                 all_descriptions = []
