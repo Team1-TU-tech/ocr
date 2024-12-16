@@ -2,7 +2,7 @@
 이 프로젝트는 이미지에서 텍스트를 추출하는 OCR(Optical Character Recognition) 기능을 제공합니다. 해당 기능은 `easyocr` 라이브러리를 사용하여 이미지를 처리하고 텍스트를 추출합니다.
 <br></br>
 ## 기술스택
-<img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=Python&logoColor=F5F7F8"/>   <img src="https://img.shields.io/badge/numpy-013243?style=flat&logo=selenium&logoColor=F5F7F8"/>    <img src="https://img.shields.io/badge/mongodb-47A248?style=flat&logo=selenium&logoColor=F5F7F8"/> 
+<img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=Python&logoColor=F5F7F8"/>   <img src="https://img.shields.io/badge/numpy-013243?style=flat&logo=numpy&logoColor=F5F7F8"/>    <img src="https://img.shields.io/badge/mongodb-47A248?style=flat&logo=mongodb&logoColor=F5F7F8"/> 
 <br></br>
 ## 개발기간
 `2024.11.21 ~ 2024.11.25 (총 5일)`
